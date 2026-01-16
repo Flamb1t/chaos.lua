@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Space Blaster 3D</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            overflow: hidden;
+            background: #000;
+            font-family: 'Courier New', monospace;
+        }
+        #gameCanvas {
+            display: block;
+        }
+        #ui {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            color: #0ff;
+            font-size: 18px;
+            text-shadow: 0 0 10px #0ff;
+            z-index: 100;
+        }
+        #ui div {
+            margin-bottom: 10px;
+        }
+        #crosshair {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 30px;
+            height: 30px;
+            border: 2px solid #0f0;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 100;
+            box-shadow: 0 0 10px #0f0;
+        }
+        #crosshair::before, #crosshair::after {
+            content: '';
+            position: absolute;
+            background: #0f0;
+            box-shadow: 0 0 5px #0f0;
+        }
+        #crosshair::before {
+            width: 2px;
+            height: 10px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        #crosshair::after {
+            width: 10px;
+            height: 2px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        #gameOver, #startScreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 200;
+            color: #fff;
+        }
+        #gameOver h1 {
+            font-size: 64px;
+            color: #f00;
+            text-shadow: 0 0 30px #f00;
+            margin-bottom: 20px;
+        }
+        #startScreen h1 {
+            font-size: 64px;
+            color: #0ff;
+            text-shadow: 0 0 30px #0ff;
+            margin-bottom: 20px;
+        }
+        #gameOver p, #startScreen p {
+            font-size: 24px;
+            margin-bottom: 30px;
+        }
+        .btn {
+            padding: 15px 40px;
+            font-size: 24px;
+            background: transparent;
+            border: 3px solid #0ff;
+            color: #0ff;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            transition: all 0.3s;
+            text-shadow: 0 0 10px #0ff;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+        }
+        .btn:hover {
+            background: #0ff;
+            color: #000;
+        }
+        #startScreen .controls {
+            margin-top: 40px;
+            text-align: center;
+            color: #888;
+            font-size: 16px;
+            line-height: 2;
+        }
+        #healthBar {
+            width: 200px;
+            height: 20px;
+            background: #333;
+            border: 2px solid #0ff;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        #healthFill {
+            height: 100%;
+            background: linear-gradient(90deg, #f00, #ff0, #0f0);
+            width: 100%;
+            transition: width 0.3s;
+        }
+        #shieldBar {
+            width: 200px;
+            height: 15px;
+            background: #333;
+            border: 2px solid #00f;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 5px;
+        }
+        #shieldFill {
+            height: 100%;
+            background: linear-gradient(90deg, #00f, #0ff);
+            width: 100%;
+            transition: width 0.3s;
+        }
+        #minimap {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 150px;
+            height: 150px;
+            background: rgba(0, 50, 50, 0.7);
+            border: 2px solid #0ff;
+            border-radius: 50%;
+            z-index: 100;
+        }
+        #boostIndicator {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            color: #ff0;
+            font-size: 16px;
+            z-index: 100;
+        }
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <div id="startScreen">
+        <h1>SPACE BLASTER 3D</h1>
+        <p>Survive the asteroid field and destroy enemy ships!</p>
+        <button class="btn" id="startBtn">START GAME</button>
+        <div class="controls">
+            <strong>CONTROLS:</strong><br>
+            WASD / Arrow Keys - Move<br>
+            Mouse - Aim<br>
+            Left Click - Shoot<br>
+            SHIFT - Boost<br>
+            SPACE - Barrel Roll (Dodge)
+        </div>
+    </div>
+
+    <div id="gameOver" class="hidden">
+        <h1>GAME OVER</h1>
+        <p>Final Score: <span id="finalScore">0</span></p>
+        <button class="btn" id="restartBtn">PLAY AGAIN</button>
+    </div>
+
+    <div id="ui" class="hidden">
+        <div>SCORE: <span id="score">0</span></div>
+        <div>WAVE: <span id="wave">1</span></div>
+        <div>HEALTH:</div>
+        <div id="healthBar"><div id="healthFill"></div></div>
+        <div>SHIELD:</div>
+        <div id="shieldBar"><div id="shieldFill"></div></div>
+    </div>
+
+    <div id="crosshair" class="hidden"></div>
+    <canvas id="minimap" class="hidden"></canvas>
+    <div id="boostIndicator" class="hidden">BOOST: <span id="boostAmount">100</span>%</div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="game.js"></script>
+</body>
+</html>
